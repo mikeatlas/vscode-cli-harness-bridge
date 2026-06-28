@@ -1,0 +1,26 @@
+{
+  "name": "vscode-cli-harness-bridge",
+  "private": true,
+  "version": "0.0.0",
+  "description": "VS Code extension + CLI bridge for terminal-native agent harnesses",
+  "license": "MIT",
+  "workspaces": [
+    "packages/protocol",
+    "packages/extension",
+    "packages/cli"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @vchb/protocol && npm run build --workspace vscode-cli-harness-bridge && npm run build --workspace @vchb/cli",
+    "typecheck": "tsc --noEmit -p packages/protocol/tsconfig.json && tsc --noEmit -p packages/extension/tsconfig.json && tsc --noEmit -p packages/cli/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "package:vsix": "npm run build --workspace vscode-cli-harness-bridge && cd packages/extension && vsce package --no-dependencies --no-git-tag-version"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

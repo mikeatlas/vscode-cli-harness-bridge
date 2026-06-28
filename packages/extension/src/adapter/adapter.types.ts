@@ -1,0 +1,25 @@
+import type {
+  ActiveEditorResult,
+  GetProblemsParams,
+  GetProblemsResult,
+  PermissionOutcome,
+  Position,
+  Range,
+  SelectionResult,
+  UiShowDiffParams,
+  UiShowDiffResult,
+} from "@vchb/protocol";
+
+// The editor-facing surface the dispatcher depends on. Only vscodeAdapter.ts implements
+// this against the real `vscode` API; tests inject a fake. Keeps the core headless-testable.
+export interface EditorAdapter {
+  getActiveEditor(): Promise<ActiveEditorResult | null>;
+  getSelection(): Promise<SelectionResult | null>;
+  showDiff(params: UiShowDiffParams): Promise<UiShowDiffResult>;
+  getProblems(params: GetProblemsParams): Promise<GetProblemsResult>;
+  requestPermission(method: string, description?: string): Promise<PermissionOutcome>;
+  // Later phases add: readFile, applyEdit, saveDocument,
+  // terminalCreate, terminalSendText.
+}
+
+export type { ActiveEditorResult, Position, Range, SelectionResult };

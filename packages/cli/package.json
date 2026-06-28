@@ -1,0 +1,21 @@
+{
+  "name": "@vchb/cli",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "bin": {
+    "vchb": "./bin/vchb",
+    "vscode-cli-harness-bridge": "./bin/vchb"
+  },
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@vchb/protocol": "*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0"
+  }
+}

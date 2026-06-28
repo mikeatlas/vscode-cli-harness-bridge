@@ -1,0 +1,66 @@
+{
+  "name": "vscode-cli-harness-bridge",
+  "displayName": "VS Code CLI Harness Bridge",
+  "publisher": "vchb",
+  "version": "0.0.2",
+  "private": true,
+  "description": "JSON-RPC bridge letting terminal-native agent harnesses use VS Code as an editor-aware tool provider.",
+  "license": "MIT",
+  "main": "./dist/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikeatlas/vscode-cli-harness-bridge"
+  },
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "package:vsix": "vsce package --no-dependencies --no-git-tag-version",
+    "vscode:prepublish": "npm run build"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "vchb.restartBridge",
+        "title": "VCHB: Restart Bridge"
+      },
+      {
+        "command": "vchb.copyEnv",
+        "title": "VCHB: Copy env vars"
+      },
+      {
+        "command": "vchb.showSessions",
+        "title": "VCHB: Show sessions"
+      }
+    ],
+    "configuration": {
+      "title": "vscode-cli-harness-bridge",
+      "properties": {
+        "vchb.bindAddress": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "Address to bind the bridge HTTP server (loopback only recommended)."
+        },
+        "vchb.port": {
+          "type": "number",
+          "default": 0,
+          "description": "Port to bind; 0 picks a random free high port."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "@vchb/protocol": "*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.12.0"
+  }
+}
