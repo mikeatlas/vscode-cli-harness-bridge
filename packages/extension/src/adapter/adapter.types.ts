@@ -1,11 +1,19 @@
 import type {
   ActiveEditorResult,
+  ApplyEditParams,
+  ApplyEditResult,
   GetProblemsParams,
   GetProblemsResult,
   PermissionOutcome,
   Position,
   Range,
+  ReadFileResult,
+  SaveDocumentResult,
   SelectionResult,
+  TerminalCreateParams,
+  TerminalCreateResult,
+  TerminalSendTextParams,
+  TerminalSendTextResult,
   UiShowDiffParams,
   UiShowDiffResult,
 } from "@vchb/protocol";
@@ -18,8 +26,11 @@ export interface EditorAdapter {
   showDiff(params: UiShowDiffParams): Promise<UiShowDiffResult>;
   getProblems(params: GetProblemsParams): Promise<GetProblemsResult>;
   requestPermission(method: string, description?: string): Promise<PermissionOutcome>;
-  // Later phases add: readFile, applyEdit, saveDocument,
-  // terminalCreate, terminalSendText.
+  readFile(path: string): Promise<ReadFileResult>;
+  applyEdit(params: ApplyEditParams): Promise<ApplyEditResult>;
+  saveDocument(path: string): Promise<SaveDocumentResult>;
+  terminalCreate(params: TerminalCreateParams): Promise<TerminalCreateResult>;
+  terminalSendText(params: TerminalSendTextParams): Promise<TerminalSendTextResult>;
 }
 
 export type { ActiveEditorResult, Position, Range, SelectionResult };

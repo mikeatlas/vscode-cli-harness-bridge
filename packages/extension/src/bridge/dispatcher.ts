@@ -1,16 +1,26 @@
 import { ZodError } from "zod";
 import {
+  ApplyEditParamsSchema,
   GetActiveEditorParamsSchema,
   GetProblemsParamsSchema,
   GetSelectionParamsSchema,
   Methods,
   PermissionRequestParamsSchema,
+  ReadFileParamsSchema,
+  SaveDocumentParamsSchema,
+  TerminalCreateParamsSchema,
+  TerminalSendTextParamsSchema,
   UiShowDiffParamsSchema,
+  type ApplyEditParams,
   type GetProblemsParams,
   type JsonRpcError,
   type JsonRpcRequest,
   type JsonRpcResponse,
   type PermissionRequestParams,
+  type ReadFileParams,
+  type SaveDocumentParams,
+  type TerminalCreateParams,
+  type TerminalSendTextParams,
   type UiShowDiffParams,
 } from "@vchb/protocol";
 import type { EditorAdapter } from "../adapter/adapter.types";
@@ -29,6 +39,11 @@ const PARAM_SCHEMAS: Record<string, (v: unknown) => unknown> = {
   [Methods.UiShowDiff]: (v) => UiShowDiffParamsSchema.parse(v),
   [Methods.DiagnosticsGetProblems]: (v) => GetProblemsParamsSchema.parse(v ?? {}),
   [Methods.PermissionRequest]: (v) => PermissionRequestParamsSchema.parse(v ?? {}),
+  [Methods.WorkspaceReadFile]: (v) => ReadFileParamsSchema.parse(v),
+  [Methods.WorkspaceApplyEdit]: (v) => ApplyEditParamsSchema.parse(v),
+  [Methods.WorkspaceSaveDocument]: (v) => SaveDocumentParamsSchema.parse(v),
+  [Methods.TerminalCreate]: (v) => TerminalCreateParamsSchema.parse(v ?? {}),
+  [Methods.TerminalSendText]: (v) => TerminalSendTextParamsSchema.parse(v),
 };
 
 export interface DispatcherDeps {
@@ -67,6 +82,11 @@ export function createDispatcher(deps: DispatcherDeps): Dispatcher {
       if (outcome === "deny") throw vchbThrow(-32004, "Permission denied by user");
       return { outcome };
     },
+    [Methods.WorkspaceReadFile]: async (params) => deps.adapter.readFile((params as ReadFileParams).path),
+    [Methods.WorkspaceApplyEdit]: async (params) => deps.adapter.applyEdit(params as ApplyEditParams),
+    [Methods.WorkspaceSaveDocument]: async (params) => deps.adapter.saveDocument((params as SaveDocumentParams).path),
+    [Methods.TerminalCreate]: async (params) => deps.adapter.terminalCreate(params as TerminalCreateParams),
+    [Methods.TerminalSendText]: async (params) => deps.adapter.terminalSendText(params as TerminalSendTextParams),
   };
 
   return {

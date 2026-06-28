@@ -26,6 +26,21 @@ function makeAdapter(opts: {
     async requestPermission() {
       return opts.permissionOutcome ?? "allow_once";
     },
+    async readFile() {
+      return { content: "file content" };
+    },
+    async applyEdit() {
+      return { applied: true };
+    },
+    async saveDocument() {
+      return { saved: true };
+    },
+    async terminalCreate() {
+      return { terminalId: 1, name: "VCHB Terminal" };
+    },
+    async terminalSendText() {
+      return { sent: true };
+    },
   };
 }
 

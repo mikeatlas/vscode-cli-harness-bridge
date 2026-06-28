@@ -5,6 +5,8 @@ import { cmdActiveEditor, cmdSelection } from "./commands/readonly";
 import { cmdDiff } from "./commands/diff";
 import { cmdDiagnostics } from "./commands/diagnostics";
 import { cmdPermission } from "./commands/permission";
+import { cmdReadFile, cmdApplyEdit, cmdSave } from "./commands/workspace";
+import { cmdTerminalCreate, cmdTerminalSend } from "./commands/terminal";
 import { cmdSessions } from "./commands/sessions";
 
 interface ParsedArgs {
@@ -13,6 +15,10 @@ interface ParsedArgs {
   workspace?: string;
   title?: string;
   all: boolean;
+  wholeFile?: string;
+  reuse: boolean;
+  terminalId?: number;
+  noNewLine: boolean;
   positional: string[];
   help: boolean;
 }
@@ -24,6 +30,10 @@ function parseArgs(argv: string[]): ParsedArgs {
   let workspace: string | undefined;
   let title: string | undefined;
   let all = false;
+  let wholeFile: string | undefined;
+  let reuse = false;
+  let terminalId: number | undefined;
+  let noNewLine = false;
   let help = false;
   const positional: string[] = [];
 
@@ -33,12 +43,22 @@ function parseArgs(argv: string[]): ParsedArgs {
       help = true;
     } else if (a === "--all") {
       all = true;
+    } else if (a === "--reuse") {
+      reuse = true;
+    } else if (a === "--no-newline") {
+      noNewLine = true;
     } else if (a === "--title") {
       title = args[++i];
     } else if (a.startsWith("--title=")) {
       title = a.slice("--title=".length);
+    } else if (a === "--whole-file") {
+      wholeFile = args[++i];
+    } else if (a.startsWith("--whole-file=")) {
+      wholeFile = a.slice("--whole-file=".length);
+    } else if (a === "--id") {
+      terminalId = Number(args[++i]);
     } else if (a.startsWith("-")) {
-      // unknown flag; ignore for now
+      // unknown flag; ignore
     } else if (!command) {
       command = a;
     } else {
@@ -46,7 +66,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
-  return { command, json, workspace, title, all, positional, help };
+  return { command, json, workspace, title, all, wholeFile, reuse, terminalId, noNewLine, positional, help };
 }
 
 const HELP = `vchb — vscode-cli-harness-bridge CLI
@@ -135,6 +155,53 @@ async function main(): Promise<void> {
           method: opts.positional[0],
           description: opts.positional[1],
         });
+        break;
+      case "read-file":
+        if (opts.positional.length < 1) {
+          process.stderr.write("vchb: read-file requires <path>\n");
+          process.exit(1);
+        }
+        await cmdReadFile(client, { path: opts.positional[0] });
+        break;
+      case "apply-edit":
+        if (opts.positional.length < 1) {
+          process.stderr.write("vchb: apply-edit requires <path> [--whole-file <content>] [<edit-json>]\n");
+          process.exit(1);
+        }
+        await cmdApplyEdit(client, {
+          path: opts.positional[0],
+          editJson: opts.positional[1],
+          wholeFile: opts.wholeFile,
+        });
+        break;
+      case "save":
+        if (opts.positional.length < 1) {
+          process.stderr.write("vchb: save requires <path>\n");
+          process.exit(1);
+        }
+        await cmdSave(client, { path: opts.positional[0] });
+        break;
+      case "terminal":
+        if (opts.positional.length < 1) {
+          process.stderr.write("vchb: terminal requires <create|send> ...\n");
+          process.exit(1);
+        }
+        if (opts.positional[0] === "create") {
+          await cmdTerminalCreate(client, { name: opts.positional[1], reuse: opts.reuse });
+        } else if (opts.positional[0] === "send") {
+          if (opts.positional.length < 2) {
+            process.stderr.write("vchb: terminal send requires <text>\n");
+            process.exit(1);
+          }
+          await cmdTerminalSend(client, {
+            text: opts.positional[1],
+            terminalId: opts.terminalId,
+            addNewLine: !opts.noNewLine,
+          });
+        } else {
+          process.stderr.write(`vchb: unknown terminal subcommand "${opts.positional[0]}"\n`);
+          process.exit(1);
+        }
         break;
       default:
         process.stderr.write(`vchb: unknown command "${opts.command}"\n`);

@@ -111,3 +111,55 @@ export const PermissionRequestResultSchema = z.object({
   outcome: PermissionOutcome,
 });
 export type PermissionRequestResult = z.infer<typeof PermissionRequestResultSchema>;
+
+// ---- workspace/readFile ----
+
+export const ReadFileParamsSchema = z.object({ path: z.string() });
+export type ReadFileParams = z.infer<typeof ReadFileParamsSchema>;
+export const ReadFileResultSchema = z.object({ content: z.string(), languageId: z.string().optional() });
+export type ReadFileResult = z.infer<typeof ReadFileResultSchema>;
+
+// ---- workspace/applyEdit ----
+
+export const TextEditSchema = z.object({
+  range: RangeSchema,
+  newText: z.string(),
+});
+export type TextEdit = z.infer<typeof TextEditSchema>;
+
+export const ApplyEditParamsSchema = z.object({
+  path: z.string(),
+  edits: z.array(TextEditSchema).optional(),
+  wholeFile: z.string().optional(),
+});
+export type ApplyEditParams = z.infer<typeof ApplyEditParamsSchema>;
+export const ApplyEditResultSchema = z.object({ applied: z.boolean() });
+export type ApplyEditResult = z.infer<typeof ApplyEditResultSchema>;
+
+// ---- workspace/saveDocument ----
+
+export const SaveDocumentParamsSchema = z.object({ path: z.string() });
+export type SaveDocumentParams = z.infer<typeof SaveDocumentParamsSchema>;
+export const SaveDocumentResultSchema = z.object({ saved: z.boolean() });
+export type SaveDocumentResult = z.infer<typeof SaveDocumentResultSchema>;
+
+// ---- terminal/create ----
+
+export const TerminalCreateParamsSchema = z.object({
+  name: z.string().optional(),
+  reuse: z.boolean().optional(),
+});
+export type TerminalCreateParams = z.infer<typeof TerminalCreateParamsSchema>;
+export const TerminalCreateResultSchema = z.object({ terminalId: z.number(), name: z.string() });
+export type TerminalCreateResult = z.infer<typeof TerminalCreateResultSchema>;
+
+// ---- terminal/sendText ----
+
+export const TerminalSendTextParamsSchema = z.object({
+  terminalId: z.number().optional(),
+  text: z.string(),
+  addNewLine: z.boolean().optional(),
+});
+export type TerminalSendTextParams = z.infer<typeof TerminalSendTextParamsSchema>;
+export const TerminalSendTextResultSchema = z.object({ sent: z.boolean() });
+export type TerminalSendTextResult = z.infer<typeof TerminalSendTextResultSchema>;

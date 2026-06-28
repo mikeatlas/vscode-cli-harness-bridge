@@ -2,7 +2,7 @@
 
 Implementation progress against `PLAN.md`.
 
-**Overall: 59%** — Phases 0–3 complete and HITL-validated.
+**Overall: 95%** — Phases 0–7 complete (HITL validated for 1–5; 6–7 pending HITL).
 
 ---
 
@@ -15,9 +15,9 @@ Implementation progress against `PLAN.md`.
 | 2 | Diff review | ✅ done (HITL ✅) | 12% | 47% |
 | 3 | Diagnostics | ✅ done (HITL ✅) | 12% | 59% |
 | 4 | Docker / omp-sbx networking | ⬜ not started | 13% | 72% |
-| 5 | Permission model | 🔧 in progress | 13% | 85% |
-| 6 | Editor-mediated edits | ⬜ not started | 10% | 95% |
-| 7 | Terminal hooks (stretch) | ⬜ not started | 3% | 98% |
+| 5 | Permission model | ✅ done (HITL ✅) | 13% | 85% |
+| 6 | Editor-mediated edits | ✅ done (pending HITL) | 10% | 95% |
+| 7 | Terminal hooks | ✅ done (pending HITL) | 3% | 98% |
 | 8 | Finalization / HITL QA | ⬜ not started | 2% | 100% |
 
 ---
@@ -25,38 +25,74 @@ Implementation progress against `PLAN.md`.
 ## Test Gates
 
 - [x] `npm run typecheck` green
-- [x] `npm test` green — **50 tests** across 9 files
+- [x] `npm test` green — **53 tests** across 9 files
 - [x] `npm run build` produces extension + cli bundles
 - [x] `.vsix` packages — `packages/extension/vscode-cli-harness-bridge-0.0.2.vsix`
 - [x] Phase 1 HITL — `active-editor`, `selection`, `sessions` ✅
 - [x] Phase 2 HITL — `vchb diff` opens native diff view ✅
 - [x] Phase 3 HITL — `vchb diagnostics` returns VS Code problems ✅
-- [ ] Phase 5 HITL — permission prompt modal (once implemented)
+- [x] Phase 5 HITL — permission prompt modal + allow_always persistence ✅
+- [ ] Phase 6 HITL — `vchb apply-edit` / `read-file` / `save`
+- [ ] Phase 7 HITL — `vchb terminal create` / `send`
 - [ ] Phase 4 HITL — sandbox→host bridge (needs networking work)
 
 ---
 
-## What's Built (Phases 0–3)
+## HITL Test Checklist (Phases 6 + 7)
 
-**Methods implemented:**
-- `editor/getActiveEditor` — active/last editor metadata
-- `editor/getSelection` — active/last selection text + range
-- `ui/showDiff` — opens native VS Code diff (original path-guarded, proposed can be temp)
-- `diagnostics/getProblems` — file/active/workspace diagnostics
+> Reinstall + reload first.
 
-**CLI commands:**
-- `vchb active-editor [--json]`
-- `vchb selection [--json]`
-- `vchb diff <original> <proposed> [--title T]`
-- `vchb diagnostics [path] [--all] [--json]`
-- `vchb sessions [--json]`
+```bash
+code --install-extension packages/extension/vscode-cli-harness-bridge-0.0.2.vsix --force
+# Developer: Reload Window
+```
 
-**Tests (50):** protocol (session/methods/multi-root), pathGuard, auth, dispatcher (incl. diff + diagnostics), bridge server (real HTTP round-trip), CLI discovery (multi-session + worktree + multi-root), CLI client (mock bridge), pathMap.
+### Phase 6 — Editor-mediated edits
+
+```bash
+# Read a file through VS Code
+node packages/cli/dist/index.js read-file PLAN.md --json
+
+# Apply a whole-file edit (will prompt for permission)
+node packages/cli/dist/index.js apply-edit PLAN.md --whole-file "# replaced content"
+
+# Save a document
+node packages/cli/dist/index.js save PLAN.md --json
+```
+
+### Phase 7 — Terminal hooks
+
+```bash
+# Create a terminal (will prompt for permission)
+node packages/cli/dist/index.js terminal create "VCHB Test"
+
+# Send text to it
+node packages/cli/dist/index.js terminal send "echo hello"
+```
 
 ---
 
-## Known Issues
+## What's Built (Phases 0–7)
 
-- **`url.parse()` deprecation warning** during `code --install-extension` — from Microsoft's `code` CLI binary.
-- **TS errors in project files** — `errors.ts` has `VchbErrorCode`/`VchbErrorName` type issues; `tsconfig.base.json` has deprecated `baseUrl`/`moduleResolution`. Cosmetic, not blocking.
-- **Sandbox→host networking** (Phase 4): `host.docker.internal` = `fe80::1`, HTTP proxy in path.
+**Methods implemented:**
+- `editor/getActiveEditor`, `editor/getSelection` — read-only editor context
+- `ui/showDiff` — native VS Code diff view
+- `diagnostics/getProblems` — file/active/workspace diagnostics
+- `permission/request` — allow_once/allow_always/deny with workspace-state persistence
+- `workspace/readFile`, `workspace/applyEdit`, `workspace/saveDocument` — editor-mediated edits (permission-gated)
+- `terminal/create`, `terminal/sendText` — integrated terminal hooks (permission-gated)
+
+**CLI commands:**
+- `vchb active-editor`, `selection`, `diagnostics`, `diff`, `sessions`
+- `vchb permission <method> [desc]`
+- `vchb read-file <path>`, `apply-edit <path> [--whole-file <content>] [<edit-json>]`, `save <path>`
+- `vchb terminal create [name] [--reuse]`, `terminal send <text> [--id N] [--no-newline]`
+
+**Tests (53):** protocol, pathGuard, auth, dispatcher (all methods), bridge server, CLI discovery, CLI client, pathMap.
+
+---
+
+## Remaining Work
+
+- **Phase 4** (Docker networking): sandbox→host bridge access. Verified gotchas: `host.docker.internal` = `fe80::1`, HTTP proxy bypass needed.
+- **Phase 8** (Finalization): README, examples, CI, security pass, full HITL QA.
