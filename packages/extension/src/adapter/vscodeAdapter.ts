@@ -284,6 +284,15 @@ export class VsCodeAdapter implements EditorAdapter {
     if (params.terminalId !== undefined) {
       term = this.terminals.get(params.terminalId);
     }
+    if (!term) {
+      // Default to the most recently created VCHB terminal, not VS Code's activeTerminal
+      // (which changes when the user clicks a different terminal panel).
+      const ids = [...this.terminals.keys()].sort((a, b) => b - a);
+      if (ids.length > 0) {
+        term = this.terminals.get(ids[0]);
+        term?.show();
+      }
+    }
     if (!term) term = vscode.window.activeTerminal;
     if (!term) vchbThrow(-32003, "No active terminal");
     term.sendText(params.text, params.addNewLine ?? true);
