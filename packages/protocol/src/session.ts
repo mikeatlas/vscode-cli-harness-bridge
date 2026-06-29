@@ -21,7 +21,13 @@ export const SessionSchema = z.object({
 export type Session = z.infer<typeof SessionSchema>;
 
 export function sessionsDir(): string {
-  return path.join(os.homedir(), ".vscode-cli-harness-bridge", "sessions");
+  return process.env.VCHB_SESSIONS_DIR
+    ?? path.join(os.homedir(), ".vscode-cli-harness-bridge", "sessions");
+}
+
+// Workspace-local session dir — written into the workspace so containers can discover it.
+export function workspaceSessionDir(workspaceRoot: string): string {
+  return path.join(workspaceRoot, ".vchb");
 }
 
 // Hash of a canonical workspace root -> stable session filename per window.
@@ -61,8 +67,23 @@ export async function writeSession(session: Session): Promise<string> {
   const tmp = `${file}.${process.pid}.tmp`;
   await fs.promises.writeFile(tmp, JSON.stringify(session, null, 2), { mode: 0o600 });
   await fs.promises.rename(tmp, file);
-  // Ensure 0600 even if file pre-existed.
   await fs.promises.chmod(file, 0o600);
+
+  // Also write a workspace-local copy so containers (omp-sbx) can discover it.
+  // Written to <workspace>/.vchb/session.json — visible because the workspace is bind-mounted.
+  for (const root of roots) {
+    try {
+      const localDir = workspaceSessionDir(root);
+      await fs.promises.mkdir(localDir, { recursive: true });
+      await fs.promises.writeFile(
+        path.join(localDir, "session.json"),
+        JSON.stringify(session, null, 2),
+        { mode: 0o600 },
+      );
+    } catch {
+      /* workspace dir may not be writable; skip */
+    }
+  }
   return file;
 }
 
@@ -81,6 +102,13 @@ export async function deleteSession(roots: string[]): Promise<void> {
   } catch {
     /* ignore */
   }
+  for (const root of roots) {
+    try {
+      await fs.promises.unlink(path.join(workspaceSessionDir(root), "session.json"));
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 export interface DiscoveredSession extends Session {
@@ -89,23 +117,50 @@ export interface DiscoveredSession extends Session {
 }
 
 export async function listSessions(): Promise<DiscoveredSession[]> {
-  const dir = sessionsDir();
-  let files: string[] = [];
-  try {
-    files = await fs.promises.readdir(dir);
-  } catch {
-    return [];
-  }
   const out: DiscoveredSession[] = [];
-  for (const f of files) {
-    if (!f.endsWith(".json")) continue;
-    const file = path.join(dir, f);
-    try {
-      const raw = await fs.promises.readFile(file, "utf8");
-      out.push({ ...SessionSchema.parse(JSON.parse(raw)), file });
-    } catch {
-      /* skip malformed/stale */
+  const seen = new Set<string>();
+
+  // 1. Scan the central sessions dir (host-side).
+  const dir = sessionsDir();
+  try {
+    const files = await fs.promises.readdir(dir);
+    for (const f of files) {
+      if (!f.endsWith(".json")) continue;
+      const file = path.join(dir, f);
+      try {
+        const raw = await fs.promises.readFile(file, "utf8");
+        const s = SessionSchema.parse(JSON.parse(raw));
+        if (!seen.has(s.bridge)) {
+          out.push({ ...s, file });
+          seen.add(s.bridge);
+        }
+      } catch {
+        /* skip malformed/stale */
+      }
     }
+  } catch {
+    /* dir doesn't exist */
   }
+
+  // 2. Scan workspace-local .vchb/session.json (container-side discovery).
+  // Walk up from cwd looking for .vchb/session.json.
+  let searchDir = process.cwd();
+  for (let i = 0; i < 20; i++) {
+    const localFile = path.join(searchDir, ".vchb", "session.json");
+    try {
+      const raw = await fs.promises.readFile(localFile, "utf8");
+      const s = SessionSchema.parse(JSON.parse(raw));
+      if (!seen.has(s.bridge)) {
+        out.push({ ...s, file: localFile });
+        seen.add(s.bridge);
+      }
+    } catch {
+      /* not found */
+    }
+    const parent = path.dirname(searchDir);
+    if (parent === searchDir) break;
+    searchDir = parent;
+  }
+
   return out;
 }
