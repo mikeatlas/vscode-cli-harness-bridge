@@ -64,6 +64,29 @@ packages/
 
 **Security:** Loopback-only bind, per-window random bearer token (`0600` session files), method allowlist, workspace path guarding, permission-gated write methods.
 
+## Environment variables
+
+| Variable | Description |
+----------|-------------|
+| `VCHB_BRIDGE_URL` | Explicit bridge URL (skips session discovery) |
+| `VCHB_BRIDGE_TOKEN` | Explicit bridge token |
+| `VCHB_WORKSPACE` | Target workspace root |
+| `VCHB_PATH_MAP` | `containerRoot=hostRoot` path mapping override |
+| `VCHB_DEBUG` | Set to `1` for debug logging to stderr |
+| `VCHB_TIMEOUT_MS` | Request timeout in ms |
+
+## Docker / sandbox
+
+Inside a container (omp-sbx), the CLI auto-detects the environment and prefers the
+`dockerBridge` URL from the session file. Proxy bypass is handled automatically. See
+`examples/omp-sbx/` for details.
+
+## Examples
+
+- `examples/omp/` — OMP agent integration notes
+- `examples/omp-sbx/` — Docker sandbox networking guide
+- `examples/generic-agent/` — minimal bash integration example
+
 ## Development
 
 ```bash

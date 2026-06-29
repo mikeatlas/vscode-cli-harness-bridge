@@ -51,6 +51,11 @@
           "type": "number",
           "default": 0,
           "description": "Port to bind; 0 picks a random free high port."
+        },
+        "vchb.dockerBridgeHost": {
+          "type": "string",
+          "default": "host.docker.internal",
+          "description": "Host to use in the dockerBridge session URL for container access."
         }
       }
     }

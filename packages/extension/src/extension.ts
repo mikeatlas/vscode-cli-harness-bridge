@@ -24,6 +24,7 @@ async function startBridge(workspaceState?: vscode.Memento): Promise<BridgeServe
   const bindAddress = cfg.get<string>("bindAddress", "127.0.0.1");
   const port = cfg.get<number>("port", 0);
   const allowOutsideRoot = cfg.get<boolean>("allowOutsideRoot", false);
+  const dockerBridgeHost = cfg.get<string>("dockerBridgeHost", "host.docker.internal");
   const roots = workspaceRoots();
   const primaryRoot = roots[0];
   const token = generateToken();
@@ -44,6 +45,7 @@ async function startBridge(workspaceState?: vscode.Memento): Promise<BridgeServe
     token,
     workspaceRoot: primaryRoot,
     workspaces: roots,
+    dockerBridgeHost,
     version: VERSION,
     dispatcher,
   });

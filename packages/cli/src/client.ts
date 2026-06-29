@@ -1,4 +1,5 @@
 import type { JsonRpcRequest, JsonRpcResponse } from "@vchb/protocol";
+import { bypassProxyForUrl } from "./proxyBypass";
 
 // JSON-RPC over HTTP. Uses Node global fetch (Node >= 18). IMPORTANT: bypasses ambient
 // HTTP(S)_PROXY for the bridge host (Phase 4 concern — sandbox sets a proxy that would
@@ -31,6 +32,7 @@ export class BridgeClient {
     const timeoutMs = this.opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
+      bypassProxyForUrl(this.opts.url);
       const resp = await fetch(this.opts.url + "/rpc", {
         method: "POST",
         headers: {

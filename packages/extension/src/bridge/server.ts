@@ -9,6 +9,7 @@ export interface BridgeServerOptions {
   token: string;
   workspaceRoot: string;
   workspaces?: string[];
+  dockerBridgeHost?: string;
   version: string;
   dispatcher: Dispatcher;
 }
@@ -104,9 +105,9 @@ export function startBridgeServer(opts: BridgeServerOptions): Promise<BridgeServ
     const actualPort = addr.port;
     const host = opts.bindAddress === "127.0.0.1" ? "127.0.0.1" : opts.bindAddress;
     const url = `http://${host}:${actualPort}`;
-    // dockerBridge is best-effort; host.docker.internal is the common macOS default.
-    // Phase 4 empirically validates/overrides this.
-    const dockerUrl = `http://host.docker.internal:${actualPort}`;
+    // dockerBridge host is configurable (default host.docker.internal).
+    const dockerHost = opts.dockerBridgeHost ?? "host.docker.internal";
+    const dockerUrl = `http://${dockerHost}:${actualPort}`;
     const session: Session = {
       bridge: url,
       dockerBridge: dockerUrl,

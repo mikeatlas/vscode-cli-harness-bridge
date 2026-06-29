@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { type DiscoveredSession, type Session, listSessions } from "@vchb/protocol";
+import { bypassProxyForUrl, isInsideContainer } from "./proxyBypass";
 import { canonicalizeWorkspaceRoot } from "./pathMap";
 
 export interface ResolvedBridge {
@@ -68,7 +69,8 @@ export async function resolveBridge(env: NodeJS.ProcessEnv = process.env, opts: 
   const sessions = await lister();
   const live: DiscoveredSession[] = [];
   for (const s of sessions) {
-    if (probe && !(await reachable(s.bridge))) continue;
+    const probeUrl = isInsideContainer() && s.dockerBridge ? s.dockerBridge : s.bridge;
+    if (probe && !(await reachable(probeUrl))) continue;
     live.push(s);
   }
 
@@ -133,7 +135,9 @@ export async function resolveBridge(env: NodeJS.ProcessEnv = process.env, opts: 
 }
 
 function fromSession(s: DiscoveredSession, source: ResolvedBridge["source"]): ResolvedBridge {
-  return { url: s.bridge, token: s.token, workspace: s.workspace, session: s, source };
+  // Inside a container, prefer dockerBridge URL (host.docker.internal) over bridge (127.0.0.1).
+  const url = isInsideContainer() && s.dockerBridge ? s.dockerBridge : s.bridge;
+  return { url, token: s.token, workspace: s.workspace, session: s, source };
 }
 
 function samePath(a: string, b: string): boolean {
@@ -156,6 +160,7 @@ async function isReachable(url: string): Promise<boolean> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 1500);
+    bypassProxyForUrl(url);
     try {
       const resp = await fetch(`${url}/health`, { signal: controller.signal });
       return resp.ok;
